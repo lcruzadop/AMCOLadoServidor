@@ -1,0 +1,73 @@
+﻿@using iTextSharp.text;
+@using iTextSharp.text.pdf;
+@using Microsoft.AspNetCore.Mvc;
+@inject IGenerarArchivo archivo
+
+<br />
+<br />
+<button class="btn btn-outline-primary" @onclick="@crearpdf">Generar pdf</button>
+<br />
+<br />
+
+@code {
+    [Parameter] public byte[] qrmemory { get; set; }
+    [Parameter] public string IdMAquina { get; set; }
+    public void crearpdf()
+    {
+        Document document = new Document(iTextSharp.text.PageSize.LETTER, 30, 30, 50, 30);
+        MemoryStream ms = new MemoryStream();
+        PdfWriter pw = PdfWriter.GetInstance(document, ms);
+        document.Open();
+        document.AddTitle(IdMAquina);
+
+
+
+        //logo--------------------
+        System.Drawing.Image image = System.Drawing.Image.FromFile("wwwroot/AMCO-Logo.png");
+        var bmp = new Bitmap(image);
+        var memorylogo = new MemoryStream();
+        bmp.Save(memorylogo, ImageFormat.Png);
+        var logo = iTextSharp.text.Image.GetInstance(memorylogo.ToArray());
+        logo.Alignment = iTextSharp.text.Image.ALIGN_TOP;
+        logo.ScaleToFit(100f, 100f);
+
+
+        //titulo
+        document.Add(new Chunk(Chunk.NEWLINE));
+
+        var parrafo2 = new Paragraph();
+        parrafo2.Font = FontFactory.GetFont("Arial", 30);
+        parrafo2.PaddingTop = 100;
+        parrafo2.SpacingBefore = 100;
+        parrafo2.SpacingAfter = 100;
+        parrafo2.Alignment = 1;
+        parrafo2.Add(IdMAquina);//0-Left, 1 middle,2 Right
+        document.Add(parrafo2);
+
+
+
+        //imagen qr
+        var qr = iTextSharp.text.Image.GetInstance(qrmemory);
+        qr.Alignment = iTextSharp.text.Image.ALIGN_CENTER;
+        qr.ScaleAbsolute(300f, 300f);
+
+        //-------------------------
+
+        qr.SetAbsolutePosition((document.PageSize.Width /3)-50f,(document.PageSize.Height/3));
+        logo.SetAbsolutePosition(document.LeftMargin+30f, document.TopMargin+30f);
+
+
+        document.Add(qr);
+        document.Add(logo);
+
+        document.Close();
+        byte[] byteStream = ms.ToArray();
+        archivo.GenerarPdf(Convert.ToBase64String(byteStream));
+        //ms = new MemoryStream();
+        //ms.Write(byteStream, 0, byteStream.Length);
+        //ms.Position = 0;
+
+    }
+
+
+}

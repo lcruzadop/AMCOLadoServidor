@@ -1,0 +1,48 @@
+﻿@using QRCoder
+@using System;
+@using System.Drawing;
+@using System.Drawing.Imaging;
+@using System.IO;
+@inject IMostrarMensajes notificacion;
+
+<h1>Generador de QR</h1>
+<input type="text" @bind="InputText" placeholder="Identificación" />
+<br />
+<br />
+<button class="btn btn-outline-primary" @onclick="@GenerateQRCode">Generar QR</button>
+<br />
+<br />
+<ActualizarImgQR QRCodeString="@QRCodeString" Visibilidad="@Visibilidad"/>
+<QRpdf qrmemory="@ms.ToArray()" IdMAquina="@InputText"></QRpdf>
+
+@code {
+
+    string PaginaWeb = "http://amcosa.mx/";
+    public string Visibilidad { get; set; } = "hidden";
+    public string InputText { get; set; } = "";
+    public string QRCodeString { get; set; } = "";
+    public MemoryStream ms { get; set; } = new MemoryStream();
+
+
+    public async Task GenerateQRCode()
+    {
+        await Task.Run(() => {
+            QRCodeString = "";
+            if (!string.IsNullOrEmpty(InputText))
+            {
+                Visibilidad = "visible";
+                QRCodeGenerator qRCodeGenerator = new QRCodeGenerator();
+                QRCodeData qRCodeData =
+                    qRCodeGenerator.CreateQrCode(InputText + "-" + PaginaWeb, QRCodeGenerator.ECCLevel.Q);
+                QRCode qRCode = new QRCode(qRCodeData);
+                Bitmap bitmap = qRCode.GetGraphic(20);
+                ms = new MemoryStream();
+                bitmap.Save(ms, ImageFormat.Png);
+                QRCodeString = "data:image/png;base64," + Convert.ToBase64String(ms.ToArray(), 0, ms.ToArray().Length);
+                notificacion.MostrarMensajeExitoso("QR creado");
+
+            }
+        });
+    }
+  }
+
